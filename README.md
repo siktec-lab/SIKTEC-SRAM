@@ -1,58 +1,34 @@
 # SIKTEC-SRAM
-A lightweight Library to easily use Multi Direction Switches.
+Library for Interfacing Microchip SRAM chips.<br />
+Suitable and tested with Microchip 23K256-I/SN should work with most of the chips of the same family and others.
 
 <br/>
 
 ## Description
-Interrupt based triggering - all ISR logic is cross platform (AVR, ESP) and done in the background correctly. (without debouncing problems) with easy to use callback attachments. This way your code will be cleaner and safer.
-`MDSwitch`h also supports MODES - Meaning you can set several modes which can be switched and has different callbacks attached, perfect workflow for menu based systems and for switching the device functionality based on the required state / mode.
-
+This library seamlessly communcates with SPI based SRAM chips and exposes a simple and lightweight API to interface with an external SRAM chip.<br />
+The library is well documented and has 2 examples - You can easily write / read / erase and debug SRAM chips. All SPI communication is managed by the library. <br />
+This library can be easily ported to other chips by simply changing the instruction set used by the library. 
 <br />
 
 ### **Physically tested with:**
 
-| BORAD    | Pins (int, push, ccw, cw)              | Info                         | 
-|:--------:|:---------------------------------------|:-----------------------------|
-| ESP32    | 35, 24, 36, 39                         | INPUT only pins              |
-| UNO      | 3, 4, 5, 6                             | Only 2,3 support interrupts  |
-| NANO     | 3, 4, 5, 6                             | Only 2,3 support interrupts  |
-| MEGA     | 3, 4, 5, 6                             |                              |
-| LEONARDO | 3, 4, 5, 6                             |                              |
-| DUE      | 3, 4, 5, 6                             | *3.3v logic                  |
+| CHIP           | Manufacturer | Datasheet                                                  |
+|:--------------:|:-------------|:-----------------------------------------------------------|
+| 23K256-I/SN    | Microchip    | [http://ww1.microchip.com/downloads/en/devicedoc/22100f.pdf](http://ww1.microchip.com/downloads/en/devicedoc/22100f.pdf) |
 
 <br/>
 
 <a id="table-contents"></a>
 
 ## Table of Contents:
-- [Library Features](#features)
 - [Quick Installation](#installation)
 - [Example Included](#examples)
-- [Decalring MDSwitch](#declaring)
-- [All the key/buttons/terminals codes](#all-the-key-codes)
-- [MDSwitch Initialization and MODES](#initialization)
-- [Assigning an Event callback](#assigning-a-callback)
-- [Auto invoking callbacks `tick()` method](#ticking)
-- [MDSwitch additional Methods](#more-methods)
+- [Decalring SIKTEC_SRAM](#declaring)
+- [Writing to SRAM](#writing-data)
+- [Reading from SRAM](#reading-data)
+- [Erasing data on the SRAM](#erasing-data)
+- [Debugging](#debugging)
 - [Important Notes](#important-notes)
-
-<br/>
-
-<a id="features"></a>
-
-## Library Features 
-
-<hr />
-
-[Return](#table-contents)
-
-- Interrupt based - Fully managed by the library - single interrupt.
-- Callbacks don't requires ISR decleration volatile or whatever - Just simple function pointers.
-- Smooth key/button captures - Debouncing and 'noise' is taking care of by the library.
-- Dynamic Enable / Disable states.
-- Modes - You can modes which stores Event -> Callbacks scheme to easily change the functionality.
-- Small, Lightweight and very fast.
-- Well documented code.
 
 <br/>
 
@@ -65,11 +41,12 @@ Interrupt based triggering - all ISR logic is cross platform (AVR, ESP) and done
 [Return](#table-contents)
 
 You can install the library through one of the following:
-1. Arduino or PlatformIO library manager: Search for "SIKTEC-MDSwitch" and click install.
+1. Arduino or PlatformIO library manager: Search for "SIKTEC_SRAM" and click install.
 2. Download the repositories as a ZIP file and install it through the Arduino IDE by:<br/>
    `Sketch -> Include library -> Add .ZIP Library.`
 3. Download the library and include it in your project folder - Then you can Include it directly:<br/>
-    `#include "{path to}\SIKTEC_MDSwitch.h"`
+    `#include "{path to}\SIKTEC_SRAM.h"`
+> **Dependency** When manually including the library you should also import the library dependencies [SIKTEC_SPI.h](https://github.com/siktec-lab/SIKTEC-SPI) .
 
 <br/>
 
@@ -81,213 +58,187 @@ You can install the library through one of the following:
 
 [Return](#table-contents)
 
-The example included with this library demonstrates how to declare and initialize the library, set modes, assign callbacks and alter between the modes based on the captured events.
-The code is well documented and should be easy to build upon and extend the functionality.
-The example will create 3 modes:
-- MODE: 0<br/>
-`CCW :: will increment a counter and print to serial output.`<br />
-`CW :: will decrement a counter and print to serial output.`<br />
-`PUSH :: will change the mode (incrementing) and print a message to serial output.`<br />
-`ANY :: will print the current counter to serial output.`
-- MODE: 1<br/>
-`CCW :: wont do anything (no callback attached).`<br />
-`CW :: wont do anything (no callback attached).`<br />
-`PUSH :: will change the mode (incrementing) and print a message to serial output.`<br />
-`ANY :: will print the current counter to serial output.`
-- MODE: 2 <br/>
-`CCW :: wont do anything (no callback attached).`<br />
-`CW :: wont do anything (no callback attached).`<br />
-`PUSH :: will change the mode (incrementing) and print a message to serial output.`<br />
-`ANY :: wont do anything (no callback attached).`
+- **ReadWrite.ino** - A simple example that writes an array to SRAM, dumps raw data from the SRAM chip and Reads back the read data.
+- **StoreStruct.ino** - This example demonstrates how to serialize a structure and store it on the SRAM chip - Also exposes a raw dump of the data and how to deserialize it back to the same type structure. 
 
 <br/>
 
 <a id="declaring"></a>
 
-## Declaring of 'MDSwitch' object:
+## Declaring of 'SIKTEC_SRAM' object:
 
 <hr />
 
 [Return](#table-contents)
 
-Call `MDSwitch` with all required pins - Make sure you are using for SW_INT an external interrupt supported pin.<br />
-the 3 terminal (key/button pins) can be any digital pin that can be set as INPUT.<br />
+Call `SIKTEC_SRAM` expects a CS (chip select) pin number to initialize with default HardWare SPI - Or pass the SPI pins to be used.<br />
+After creating the `SIKTEC_SRAM` instance the `begin()` method should be called to start SRAM communication.
 
 ```cpp
 
-#include <SIKTEC_MDSwitch.h>
+#include <SIKTEC_SRAM.h>
 
 ...
 
 //using namespace SIKtec; // Optional 
 
-SIKtec::MDSwitch mdswitch(
-    SW_PUSH, // Push button pin number -> middle switch terminal 
-    SW_CCW,  // CCW button pin number  -> right switch terminal 
-    SW_CW,   // CW button pin number   -> left switch terminal 
-    SW_INT   // Shared interrupt pin.
-);
+//Define SRAM CS Pin attached:
+#define SRAM_CS     17
 
-...
-```
-> - **Note**: all terminals are and interrupt should be pulled low - If you are using SIKTEC's prototype board this is allready done.
-> - **Note**: Since we assume terminals are pulled down, we can use Digital pins which can be only inputs without internal pulldown/up options (e.g. ESP32 34-39)
+//Declare SRAM object:
+SIKtec::SIKTEC_SRAM sram(SRAM_CS);
 
-<br/>
+void setup() {
+    
+    ...
+    
+    //Start SRAM Communication
+    sram.begin();
 
-<a id="all-the-key-codes"></a>
-
-## All the key/buttons/terminals codes:
-
-<hr />
-
-[Return](#table-contents)
-
-By default the shield has 4 key events - Events are mapped using a simple enum value;
-
-| enum | Button              | More info |
-|:----:|:--------------------|------------|
-| `MDS_KEYS::PUSH`  | Middle switch "push in" Event |                                                                           |
-| `MDS_KEYS::CW`    | Switch side push event        |                                                                           |
-| `MDS_KEYS::CCW`   | Switch side push event        |                                                                           |
-| `MDS_KEYS::ANY`   | Any of above                  | when attaching a callback to this event all keys will trigger the calback |
-
-> **Note:** `MDS_KEYS::ANY` won't replace the key/button events - It will be triggered AFTER the specific callback (if there is one attached).
-
-<br/>
-
-<a id="initialization"></a>
-
-## Initializing and setting MODES
-
-<hr />
-
-[Return](#table-contents)
-
-Creating a **MDSwitch** object does not initialize it - Its necessary to call the `.init(const int _modes)` method which initializes the object and does all the pin declarations + allocates memory for the callbacks pointers.
-
-```cpp
-mdswitch.init(3 /* how many modes */); // each mode can take a set of callbacks.
-```
-The method expects an integer which sets how many MODES are we going to use - MODES are basically an internal state which can be switched. Each mode can have its own set of callbacks attached and invoked.
-> **Note**: By default only 1 mode will be created - (mode index 0).
-
-To change modes and set the current enabled/used mode:
-
-```cpp
-...
-
-mdswitch.mode(0); //set mode 1
-mdswitch.mode(1); //set mode 2
-mdswitch.mode(2); //set mode 3
-
-...
-
-int usedmode = mdswitch.mode(); // returns the current enabled/used mode index.
-
-```
-
-<br/>
-
-<a id="assigning-a-callback"></a>
-
-## Assigning an Event callback
-
-<hr />
-
-[Return](#table-contents)
-
-By default there is are no callbacks when a button is pressed/captured. To assign your custom callback functions attach them using the `.attach()` method.
-
-```cpp
-
-//Attach callbacks:
-mdswitch.attach(-1, MDS_KEYS::PUSH, &cb_push);  // -1 means all modes - 0,1,2.
-mdswitch.attach(0, MDS_KEYS::CCW,  &cb_ccw_cw);    // only in mode 0.
-mdswitch.attach(0, MDS_KEYS::CW,   &cb_ccw_cw);     // only in mode 0.
-mdswitch.attach(0, MDS_KEYS::ANY,  &cb_any);    // any will be called in mode 0 + 1
-mdswitch.attach(1, MDS_KEYS::ANY,  &cb_any);
-...
-mdswitch.detach(1, MDS_KEYS::PUSH); // will detach the push event callback from mode 1 ONLY
-
-```
-> - **Note:** A good practice will be to define callbacks inside the `setup()` function.<br />
-> - **MDS_KEYS::ANY** Is a special event which is triggered when any button/key event is captured - AFTER the dedicated callback.
-
-All callbacks function should be declared as ` void cb(const int mode, const MDS_KEYS key)`.<br />
-When a callback is invoked its called with the current mode and the key/button which invoked it. This way you can use the same function
-for several event callbacks. 
-
-```cpp
-//Example of simple callbacks declaration:
-void cb_ccw_cw(const int mode, const MDS_KEYS key) {
-
-    if (key == MDS_KEYS::CCW)
-        Serial.println("Invoked CCW callback");
-
-    if (key == MDS_KEYS::CW)
-        Serial.println("Invoked CW callback");
+    //Set the SRAM chip array Mode:
+    if (!sram.set_mode(SRAM_MODE::SRAM_SEQ_MODE)) {
+        Serial.print("SRAM MODE FAILED");
+    }
+    ...
 }
-
+...
 ```
-> - You don't need to care about ISR stuff in your callbacks (e.g volatile, IRAM_ATTR etc.) thats because the callback is not directly invoked by the interrupt handler - Its being called (if needed) from the `tick()` handler.<br/>
-> - **Why cb's are not directly invoked?** ISR routines should be as fast as possible. The library ISR handler only debounces the event and sets an internal flag, indicating which event should be consumed. Doing more than that directly from an interrupt routine can cause other interrupt events to be ignored or in some systems exceptions and even reset of the system. Also, the code is simpler and easier for most of the library users. 
+> - **Note**: SIKTEC_SRAM depends on SIKTEC_SPI which is an SPI wrapper that improves the SPI api.
+> - **Note**: Its a good practice to add a pull-up ressistor to the CS pin.
+> - **Note**: Three MODES are available - SRAM_SEQ_MODE, SRAM_PAGE_MODE, SRAM_BYTE_MODE - read more about those modes in the datasheet. 
 
 <br/>
 
-<a id="ticking"></a>
+<a id="writing-data"></a>
 
-## Auto invoking callbacks `tick()` method:
+## Writing to SRAM:
 
 <hr />
 
 [Return](#table-contents)
 
-The best practice is to call the `tick()` method from the `loop()` - The tick method checks wether an event was captured and consumes it. By consume I mean if a callback was attached it will be triggered otherwise the event will be ignored.
+By default the library doesn't set any default data on the SRAM - Its full of garbage. <br />
+To write data you should use the `write()` passing it a **start address**, a **buffer** of data, and the **size** to write.<br />
+Address space starts at `0x0000` and ends depending on the SRAM size.
 
 ```cpp
-void loop() {
+    ...
+    
+    //Write a single byte:
+    uint8_t single = 7;
+    sram.write8(0x0000, single); // will occupy 0x0000
 
-    //This is the tick - Extremely fast, just checks if a key was recorded.  
-    //If an event was captured and it has an attached callback it will be triggered.
-    mdswitch.tick();
+    //Write a uint16:
+    uint16_t single = 1700;
+    sram.write16(0x0001, single); // will occupy 0x0001, 0x0002
 
-    delay(20);
-}
+    //Array write:
+    uint8_t data[] = {1, 2, 3, 4, 5};
+    sram.write(0x0003, data, sizeof(data)); // will occupy 0x0003 -> 0x0007
+
+    ...
 ```
+
+> **Note:** If an overflow occurs the SRAM chip will loop back to the 0x00 and write there.
 
 <br/>
 
-<a id="more-methods"></a>
+<a id="reading-data"></a>
 
-## MDSwitch additional Methods:
+## Reading from SRAM
 
 <hr />
 
 [Return](#table-contents)
 
-**Dynamically enable/disable callbacks**:
+To read data you should use the object `read()` methods passing it the **starting address** and a **buffer** to write to with the requested **length**.
 
 ```cpp
-mdswitch.enable();
-mdswitch.disable();
-```
-**Reading the inputs programatically on demand**:
+    ...
 
-```cpp
-MDS_KEYS key = MDSwitch::read();
-```
-**Programatically invoking a specific callback**:
+    //Read a single byte:
+    uint8_t single8 = sram.read8(0x0000);
 
-```cpp
-bool invoked1 = mdswitch.invoke(MDS_KEYS::CCW);     // will invoke the CCW callback in the current mode.
-bool invoked2 = mdswitch.invoke(1, MDS_KEYS::CW);   // will invoke the CW callback in a specific mode.
+    //Read a uint16:
+    uint16_t single16 = sram.read16(0x0001); // will basically read 0x1 and 0x2 and returns a uint16 number
+
+    //Read to buffer:
+    uint8_t data[10];
+    sram.read(0x0003, data, sizeof(data));
+
+    ...
 ```
-> - The ability to invoke callbacks of other events in different modes is usefull when creating advanced menu based systems.
-> - `invoke()` doesn't change the internal captured event nor the current mode of the object.
-> - `ANY` callback will not be invoked automatically when using the `invoke()` method.  
+> **Note:** Even if you did not write data to those addresses SRAM will return data - It will be garbage data set by default.
 
 <br/>
+
+<a id="erasing-data"></a>
+
+## Erasing data on the SRAM
+
+<hr />
+
+[Return](#table-contents)
+
+There is no real data erasing - The trick is to set the data to a default value which we consider as "erased". The default value used by the method is `0x00` but you can use your own - To erase you should use the `erase()` method.
+
+```cpp
+    ...
+
+    //Erase:
+    sram.erase(0x0000, 2); // 0x0 and 0x1 will be set to 0.
+
+    sram.erase(0x0000, 2, 0x1); // 0x0 and 0x1 will be set to 1.
+
+    ...
+```
+
+<br/>
+
+<a id="debugging"></a>
+
+## Debugging:
+
+<hr />
+
+[Return](#table-contents)
+
+The library has two debugging methods `print_status()`, `mem_dump()` - Those methods expects a `Stream` instance 
+By default will use the `Serial` instance included by Arduino.  
+
+```cpp
+    ...
+
+    /*  
+    void mem_dump(
+        uint16_t from, 
+        uint16_t length, 
+        bool address = true, 
+        bool decimal = true, 
+        bool hex = true, 
+        bool binary = true, 
+        Stream *serialport = &Serial
+    );
+    */
+
+    sram.mem_dump(0x0000, 2);
+    /*
+    Will print data written on sram:
+    SRAM [0x0] => 100 , 0x64 , 1100100
+    SRAM [0x1] => 0 , 0x0 , 0
+    */
+
+    sram.print_status(0x0000, 2);
+    /*
+    Will print:
+    SRAM STATUS REGISTER - 64 [1000000]
+    */
+
+    ...
+```
+> By default `mem_dump()` will print data in 3 formats **dec, hex, bin** - you can disable those formats with the flags passed to mem_dump.
+
+<br />
 
 <a id="important-notes"></a>
 
@@ -297,6 +248,5 @@ bool invoked2 = mdswitch.invoke(1, MDS_KEYS::CW);   // will invoke the CW callba
 
 [Return](#table-contents)
 
-1. By default `MDSwitch` can hold up to 5 callbacks per mode. One callback for each event.
-2. The library is implementing a non blocking delay of `80ms` for debouncing. If you need to adjust that - Change the defined value of `SIKTEC_MDS_DEBOUNCE_DELAY` in `SIKTEC_MDSwitch.h`.
-3. Initialize the object with the ACTUAL number of modes you are planing to actually use - Each additional mode allocates additional memory to store the callbacks pointers.
+1. The library has more methods which exposes a lower level that gives you control over the CS pin state - Its usefull especially when you want to bridge data between the SRAM chip to another connected SPI device directly.
+2. For more advance usage and storing structs use the examples which are commented and provides more real-world usage of this library.
