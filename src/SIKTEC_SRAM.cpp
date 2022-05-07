@@ -8,6 +8,8 @@
 
 #include "SIKTEC_SRAM.h"
 
+namespace SIKtec {
+
 /** 
  * @brief  Class constructor when using software SPI
  * @param mosi  master out slave in pin
@@ -92,8 +94,8 @@ void SIKTEC_SRAM::write(uint16_t addr, uint8_t *buf, uint16_t num, uint8_t reg) 
     // write command and address
     uint8_t cmdbuf[] = {
         reg,
-        (addr >> 8),
-        (addr & 0xFF)
+        (uint8_t)(addr >> 8),
+        (uint8_t)(addr & 0xFF)
     };
     (void)this->_spi->write(buf, num, cmdbuf, 3);
 }
@@ -114,8 +116,8 @@ void SIKTEC_SRAM::read(uint16_t addr, uint8_t *buf, uint16_t num, uint8_t reg) {
     // write command and address
     uint8_t cmdbuf[] = {
         reg,
-        (addr >> 8),
-        (addr & 0xFF)
+        (uint8_t)(addr >> 8),
+        (uint8_t)(addr & 0xFF)
     };
     (void)this->_spi->write_then_read(cmdbuf, 3, buf, num);
 
@@ -190,8 +192,8 @@ void SIKTEC_SRAM::erase(uint16_t addr, size_t length, uint8_t val) {
     // write command and address
     uint8_t cmdbuf[] = {
         SIK_SRAM_WRITE,
-        (addr >> 8),
-        (addr & 0xFF)
+        (uint8_t)(addr >> 8),
+        (uint8_t)(addr & 0xFF)
     };
     (void)this->_spi->repeated(val, length, cmdbuf, 3);
 }
@@ -239,10 +241,12 @@ bool SIKTEC_SRAM::is_mode(SRAM_MODE mode_instruction) {
 */
 void SIKTEC_SRAM::print_status(Stream *serialport) {
     uint8_t reg = this->read_status();
-    serialport->print("SRAM STATUS  - ");
+    serialport->print("SRAM STATUS REGISTER - ");
     serialport->print(reg);
-    serialport->print(" -> ");
-    serialport->println(reg, BIN);
+    serialport->print(" [");
+    serialport->print(reg, BIN);
+    serialport->println("]");
+
 }
 
 /** 
@@ -251,33 +255,33 @@ void SIKTEC_SRAM::print_status(Stream *serialport) {
  * @param from          from address
  * @param length        how many to dump
  * @param address       print HEX address?
- * @param decimal       print Decimal value?
+ * @param hex           print HEX value?
  * @param character     print ASCII value?
  * @param binary        print Binary value?
  * @param serialport    the serial interface to use
  * 
  * @returns void
 */
-void SIKTEC_SRAM::mem_dump(uint16_t from, uint16_t length, bool address, bool decimal, bool character, bool binary, Stream *serialport) {
+void SIKTEC_SRAM::mem_dump(uint16_t from, uint16_t length, bool address, bool decimal, bool hex, bool binary, Stream *serialport) {
     uint8_t value;
     for (; length; length--) {
         value = this->read8(from++);
         if (address) {
             serialport->print("SRAM [0x");
-            serialport->print(from, HEX);
+            serialport->print(from - 1, HEX);
             serialport->print("] => ");
         } else {
             serialport->print("SRAM => ");
         }
         if (decimal) {
-            serialport->print((byte)value);
+            serialport->print(value, DEC);
         }
-        if (character) {
-            if (decimal) serialport->print(" , "); 
-            serialport->print((char)value);
+        if (hex) {
+            if (decimal) serialport->print(" , 0x"); 
+            serialport->print(value, HEX);
         }
         if (binary) {
-            if (character || (!character && decimal)) serialport->print(" , "); 
+            if (hex || (!hex && decimal)) serialport->print(" , "); 
             serialport->print(value, BIN);
         }
         serialport->print("\r\n");
@@ -318,4 +322,6 @@ void SIKTEC_SRAM::csHigh() {
  */
 void SIKTEC_SRAM::csLow() {
     digitalWrite(this->_cs, LOW);
+}
+
 }

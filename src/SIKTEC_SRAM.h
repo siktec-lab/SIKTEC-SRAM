@@ -17,6 +17,7 @@
 *******************************************************************************/
 
 #pragma once 
+
 /** @file SIKTEC_SRAM.h */
 
 //------------------------------------------------------------------------//
@@ -26,6 +27,8 @@
 #include <Arduino.h>
 #include <SIKTEC_SPI.h>
 
+namespace SIKtec {
+
 //------------------------------------------------------------------------//
 // DEFAULT ADDRESSES AND CONSTANTS:
 //------------------------------------------------------------------------//
@@ -34,6 +37,7 @@
 #define SIK_SRAM_WRITE 0x02     ///< write command
 #define SIK_SRAM_RDSR  0x05     ///< read status register command
 #define SIK_SRAM_WRSR  0x01     ///< write status register command
+
 
 
 /** @brief SRAM modes  */
@@ -83,10 +87,12 @@ class SIKTEC_SRAM {
         bool is_mode(SRAM_MODE mode_instruction);
 
         void print_status(Stream *serialport = &Serial);
-        void mem_dump(uint16_t from, uint16_t length, bool address = true, bool decimal = true, bool character = true, bool binary = true, Stream *serialport = &Serial);
+        void mem_dump(uint16_t from, uint16_t length, bool address = true, bool decimal = true, bool hex = true, bool binary = true, Stream *serialport = &Serial);
 
         void disableCsToggle();
         void enableCsToggle();
         void csHigh();
         void csLow();
 };
+
+}
