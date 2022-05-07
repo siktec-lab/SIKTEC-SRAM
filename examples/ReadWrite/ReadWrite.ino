@@ -5,7 +5,8 @@
 // Copyright 2022, SIKTEC.
 /******************************************************************************/
 /*****************************      DESCRIPTION       *************************
- * 
+ * A simple example on how to declare the SRAM object, write, read, erase
+ * and dump mem for debugging.
 /*****************************      NOTES       *******************************
     -> Tested with 23K256-I/SN - should work with others too.
     -> datasheet of test chip: 
@@ -19,47 +20,73 @@
 #include <Arduino.h>
 #include <SIKTEC_SRAM.h>
 
-#define SRAM_CS     17
+//Define SRAM CS Pin attached:
+#define SRAM_CS 17
 
+using namespace SIKtec;
+
+//Declare SRAM object:
 SIKTEC_SRAM sram(SRAM_CS);
+
+
+//Helper function that prints the SRAM mode an
+void print_sram_mode();
 
 void setup() {
     
     Serial.begin(115200);
     while (!Serial) { delay(10); }
 
-    Serial.println("Sram interfacing Example 1");
+    Serial.println("\nSRAM Write/Read Example:\n");
 
-    //Start Sram communication
+    //Start SRAM Communication
     sram.begin();
 
-    //Put in seq mode:
+    //Put SRAM in sequential mode:
     if (!sram.set_mode(SRAM_MODE::SRAM_SEQ_MODE)) {
         Serial.print("SRAM MODE FAILED");
     } else {
         print_sram_mode();
     }
 
-    Serial.println("\nWriting data to SRAM .... ");
+    //Test data - simple integer array:
     uint8_t data[] = {1, 2, 3, 4, 5, 6, 7, 8};
-    uint16_t length = 8;
-    sram.write(0x0000, data, length);
 
-    Serial.println("SRAM DUMP first 10 bytes:");
-    sram.mem_dump(0x0000, 10);
+    //Writing data to SRAM:
+    Serial.println("\nWriting data to SRAM .... ");
+    sram.write(0x0000, data, sizeof(data));
 
-    Serial.println("\nErasing data from SRAM [0x3 -> 0x5].... ");
+    //DUMP after write:
+    Serial.println("SRAM DUMP written bytes:");
+    sram.mem_dump(0x0000, sizeof(data));
+
+    //Earsing some values:
+    Serial.println("\nErasing data from SRAM [0x2 -> 0x4].... ");
     sram.erase(0x0002, 3);
 
-    Serial.println("SRAM DUMP first 10 bytes:");
-    sram.mem_dump(0x0000, 10);
+    //DUMP after erase:
+    Serial.println("SRAM DUMP after erase:");
+    sram.mem_dump(0x0000, sizeof(data));
 
+    //Reading back the stored values:
+    Serial.println("\nReading back:");
+    uint8_t back[sizeof(data)];
+    sram.read(0x0000, back, sizeof(back));
+    for (int i = 0; i < sizeof(back); ++i) {
+        if (i) Serial.print(" | ");
+        Serial.print(back[i], DEC);
+    }
 }
 
 void loop() {
     delay(500);
 }
 
+/**
+ * @brief will print the current SRAM mode and the status register
+ * 
+ * @return void
+ */
 void print_sram_mode() {
     Serial.print("SRAM IS IN MODE => ");
     if (sram.is_mode(SRAM_MODE::SRAM_SEQ_MODE)) {
