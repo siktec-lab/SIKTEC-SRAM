@@ -1,4 +1,4 @@
-# SIKTEC-MDSwitch
+# SIKTEC-SRAM
 A lightweight Library to easily use Multi Direction Switches.
 
 <br/>
