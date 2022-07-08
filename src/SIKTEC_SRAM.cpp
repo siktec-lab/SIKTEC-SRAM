@@ -1,6 +1,6 @@
 /******************************************************************************/
 // Created by: SIKTEC.
-// Release Version : 1.0.1
+// Release Version : 1.0.2
 // Creation Date: 2022-03-31
 // Copyright 2022, SIKTEC.
 /******************************************************************************/
@@ -40,7 +40,7 @@ SIKTEC_SRAM::SIKTEC_SRAM(int8_t cs, SPIClass *spi, uint32_t freq) {
     this->_spi = new SIKTEC_SPI(
         cs,
         freq,
-        SPI_BITORDER_MSBFIRST,
+        SIKSPI_BitOrder::SIKSPI_BITORDER_MSBFIRST,
         SPI_MODE0,
         spi
     );
